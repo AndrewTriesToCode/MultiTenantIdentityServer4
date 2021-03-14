@@ -1,0 +1,31 @@
+﻿@using Finbuckle.MultiTenant
+@using Microsoft.Extensions.DependencyInjection
+@{
+    ViewData["Title"] = "Home Page";
+    var tenant = Context.GetMultiTenantContext<AppTenantInfo>()?.TenantInfo;
+}
+
+<div>
+    <h1 class="display-4 text-center">Welcome</h1>
+    <p>This is the client for the multitenant IdentityServer4 sample</p>
+    @if (tenant == null)
+    {
+        <p>Select a tenant:</p>
+        <ul>
+            @foreach (var t in await Context.RequestServices.GetRequiredService<IMultiTenantStore<AppTenantInfo>>().GetAllAsync())
+            {
+                <li>
+                    <a asp-controller="Home" asp-action="Index" asp-route-__tenant__="@t.Identifier">@t.Name (@t.Identifier, @t.Id) </a>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>Tenant: @tenant.Identifier</p>
+        <p>OpenIdConnect Authority: @tenant.OpenIdConnectAuthority</p>
+        <p>OpenIdConnect ClientId: @tenant.OpenIdConnectClientId</p>
+                                                                  
+        <p><a asp-action="Claims">Authorize and view claims.</a></p>
+    }
+</div>

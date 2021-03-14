@@ -1,0 +1,24 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  mvcclient:
+    build: src/MvcClient
+    ports:
+      - 5000:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=docker-localhost
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/docker-localhost.pfx
+    volumes:
+      - ~/.aspnet/https:/https:ro
+  identityserver:
+    build: src/IdentityServerAspNetIdentity
+    ports:
+      - 5001:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=docker-localhost
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/docker-localhost.pfx
+    volumes:
+      - ~/.aspnet/https:/https:ro

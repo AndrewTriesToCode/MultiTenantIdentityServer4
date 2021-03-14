@@ -1,0 +1,7 @@
+@using Finbuckle.MultiTenant
+
+@{
+    var tenant = Context.GetMultiTenantContext<AppTenantInfo>()?.TenantInfo?.Name ?? "No Tenant";
+}
+
+<span class="text-dark">@tenant</span>
