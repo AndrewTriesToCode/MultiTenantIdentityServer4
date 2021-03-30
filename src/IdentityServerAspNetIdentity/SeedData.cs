@@ -144,7 +144,7 @@ namespace IdentityServerAspNetIdentity
                                 ClientId = clientId,
                                 ClientSecrets = { new Secret("secret".Sha256()) },
                                 AllowedGrantTypes = GrantTypes.Code,
-                                RedirectUris = { "https://localhost:5000/signin-oidc" },
+                                RedirectUris = { "https://localhost:44392/signin-oidc" },
                                 //FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
                                 //PostLogoutRedirectUris = { "https://localhost:44300/signout-callback-oidc" },
 
