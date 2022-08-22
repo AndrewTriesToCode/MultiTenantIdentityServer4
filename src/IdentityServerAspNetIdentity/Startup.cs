@@ -34,8 +34,11 @@ namespace IdentityServerAspNetIdentity
         {
             services.AddControllersWithViews();
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlite(Configuration.GetConnectionString("AspNetIdentityConnection")));
+            services.AddDbContext<ApplicationDbContext>(
+#if !PER_TENANT_IDENTITY_STORES
+                options => options.UseSqlite(Configuration.GetConnectionString("AspNetIdentityConnection"))
+#endif
+                );
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()

@@ -29,8 +29,11 @@ namespace IdentityServerAspNetIdentity
 
             services.AddLogging();
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlite(config.GetConnectionString("AspNetIdentityConnection")));
+            services.AddDbContext<ApplicationDbContext>(
+#if !PER_TENANT_IDENTITY_STORES
+                options => options.UseSqlite(config.GetConnectionString("AspNetIdentityConnection"))
+#endif
+                );
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
