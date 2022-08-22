@@ -39,9 +39,15 @@ namespace IdentityServerAspNetIdentity
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
+#if PER_TENANT_CONFIGURATION
             services.AddConfigurationDbContext<MultiTenantConfigurationDbContext>(options =>
                 options.ConfigureDbContext = optionsBuilder =>
                     optionsBuilder.UseSqlite(config.GetConnectionString("ConfigurationStoreConnection")));
+#else
+            services.AddConfigurationDbContext(options =>
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(config.GetConnectionString("ConfigurationStoreConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity")));
+#endif
 
             services.AddMultiTenant<TenantInfo>()
                 .WithConfigurationStore();
@@ -122,9 +128,13 @@ namespace IdentityServerAspNetIdentity
                             Log.Debug("bob already exists");
                         }
 
-
+#if PER_TENANT_CONFIGURATION
                         var configurationDbContext =
                             scope.ServiceProvider.GetRequiredService<MultiTenantConfigurationDbContext>();
+#else
+                        var configurationDbContext =
+                            scope.ServiceProvider.GetRequiredService<IdentityServer4.EntityFramework.DbContexts.ConfigurationDbContext>();
+#endif
 
                         configurationDbContext.Database.Migrate();
 

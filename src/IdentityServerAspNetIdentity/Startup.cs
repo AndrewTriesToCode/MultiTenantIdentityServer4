@@ -54,11 +54,19 @@ namespace IdentityServerAspNetIdentity
                 // see https://identityserver4.readthedocs.io/en/latest/topics/resources.html
                 options.EmitStaticAudienceClaim = true;
             })
+#if PER_TENANT_CONFIGURATION
             .AddConfigurationStore<MultiTenantConfigurationDbContext>(options =>
             {
                 options.ConfigureDbContext = optionsBuilder =>
                     optionsBuilder.UseSqlite(Configuration.GetConnectionString("ConfigurationStoreConnection"));
             })
+#else
+            .AddConfigurationStore(options =>
+            {
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(Configuration.GetConnectionString("ConfigurationStoreConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity"));
+            })
+#endif
             .AddAspNetIdentity<ApplicationUser>();
 
             // not recommended for production - you need to store your key material somewhere secure
