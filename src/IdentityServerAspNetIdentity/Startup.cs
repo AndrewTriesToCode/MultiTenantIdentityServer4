@@ -54,6 +54,19 @@ namespace IdentityServerAspNetIdentity
                 // see https://identityserver4.readthedocs.io/en/latest/topics/resources.html
                 options.EmitStaticAudienceClaim = true;
             })
+#if PER_TENANT_GRANTS
+                .AddOperationalStore<MultiTenantPersistedGrantDbContext>(options =>
+                {
+                    options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(Configuration.GetConnectionString("OperationalConnection"));
+                })
+#else
+                .AddOperationalStore(options =>
+                {
+                    options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(Configuration.GetConnectionString("OperationalConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity"));
+                })
+#endif
 #if PER_TENANT_CONFIGURATION
             .AddConfigurationStore<MultiTenantConfigurationDbContext>(options =>
             {

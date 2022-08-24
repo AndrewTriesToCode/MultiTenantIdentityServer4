@@ -38,7 +38,15 @@ namespace IdentityServerAspNetIdentity
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
-
+#if PER_TENANT_GRANTS
+            services.AddOperationalDbContext<MultiTenantPersistedGrantDbContext>(options =>
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(config.GetConnectionString("OperationalConnection")));
+#else
+            services.AddOperationalDbContext(options =>
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(config.GetConnectionString("OperationalConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity")));
+#endif
 #if PER_TENANT_CONFIGURATION
             services.AddConfigurationDbContext<MultiTenantConfigurationDbContext>(options =>
                 options.ConfigureDbContext = optionsBuilder =>
@@ -173,6 +181,16 @@ namespace IdentityServerAspNetIdentity
                         }
 
                         configurationDbContext.SaveChanges();
+
+#if PER_TENANT_GRANTS
+                        var operationalDbContext =
+                            scope.ServiceProvider.GetRequiredService<MultiTenantPersistedGrantDbContext>();
+#else
+                        var operationalDbContext =
+                            scope.ServiceProvider.GetRequiredService<IdentityServer4.EntityFramework.DbContexts.PersistedGrantDbContext>();
+#endif
+                        operationalDbContext.Database.Migrate();
+                        operationalDbContext.SaveChanges();
                     }
                 }
             }
