@@ -29,16 +29,33 @@ namespace IdentityServerAspNetIdentity
 
             services.AddLogging();
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlite(config.GetConnectionString("AspNetIdentityConnection")));
+            services.AddDbContext<ApplicationDbContext>(
+#if !PER_TENANT_IDENTITY_STORES
+                options => options.UseSqlite(config.GetConnectionString("AspNetIdentityConnection"))
+#endif
+                );
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
-
+#if PER_TENANT_GRANTS
+            services.AddOperationalDbContext<MultiTenantPersistedGrantDbContext>(options =>
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(config.GetConnectionString("OperationalConnection")));
+#else
+            services.AddOperationalDbContext(options =>
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(config.GetConnectionString("OperationalConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity")));
+#endif
+#if PER_TENANT_CONFIGURATION
             services.AddConfigurationDbContext<MultiTenantConfigurationDbContext>(options =>
                 options.ConfigureDbContext = optionsBuilder =>
                     optionsBuilder.UseSqlite(config.GetConnectionString("ConfigurationStoreConnection")));
+#else
+            services.AddConfigurationDbContext(options =>
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(config.GetConnectionString("ConfigurationStoreConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity")));
+#endif
 
             services.AddMultiTenant<TenantInfo>()
                 .WithConfigurationStore();
@@ -119,9 +136,13 @@ namespace IdentityServerAspNetIdentity
                             Log.Debug("bob already exists");
                         }
 
-
+#if PER_TENANT_CONFIGURATION
                         var configurationDbContext =
                             scope.ServiceProvider.GetRequiredService<MultiTenantConfigurationDbContext>();
+#else
+                        var configurationDbContext =
+                            scope.ServiceProvider.GetRequiredService<IdentityServer4.EntityFramework.DbContexts.ConfigurationDbContext>();
+#endif
 
                         configurationDbContext.Database.Migrate();
 
@@ -160,6 +181,16 @@ namespace IdentityServerAspNetIdentity
                         }
 
                         configurationDbContext.SaveChanges();
+
+#if PER_TENANT_GRANTS
+                        var operationalDbContext =
+                            scope.ServiceProvider.GetRequiredService<MultiTenantPersistedGrantDbContext>();
+#else
+                        var operationalDbContext =
+                            scope.ServiceProvider.GetRequiredService<IdentityServer4.EntityFramework.DbContexts.PersistedGrantDbContext>();
+#endif
+                        operationalDbContext.Database.Migrate();
+                        operationalDbContext.SaveChanges();
                     }
                 }
             }

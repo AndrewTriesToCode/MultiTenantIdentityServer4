@@ -34,8 +34,11 @@ namespace IdentityServerAspNetIdentity
         {
             services.AddControllersWithViews();
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlite(Configuration.GetConnectionString("AspNetIdentityConnection")));
+            services.AddDbContext<ApplicationDbContext>(
+#if !PER_TENANT_IDENTITY_STORES
+                options => options.UseSqlite(Configuration.GetConnectionString("AspNetIdentityConnection"))
+#endif
+                );
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -51,11 +54,32 @@ namespace IdentityServerAspNetIdentity
                 // see https://identityserver4.readthedocs.io/en/latest/topics/resources.html
                 options.EmitStaticAudienceClaim = true;
             })
+#if PER_TENANT_GRANTS
+                .AddOperationalStore<MultiTenantPersistedGrantDbContext>(options =>
+                {
+                    options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(Configuration.GetConnectionString("OperationalConnection"));
+                })
+#else
+                .AddOperationalStore(options =>
+                {
+                    options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(Configuration.GetConnectionString("OperationalConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity"));
+                })
+#endif
+#if PER_TENANT_CONFIGURATION
             .AddConfigurationStore<MultiTenantConfigurationDbContext>(options =>
             {
                 options.ConfigureDbContext = optionsBuilder =>
                     optionsBuilder.UseSqlite(Configuration.GetConnectionString("ConfigurationStoreConnection"));
             })
+#else
+            .AddConfigurationStore(options =>
+            {
+                options.ConfigureDbContext = optionsBuilder =>
+                    optionsBuilder.UseSqlite(Configuration.GetConnectionString("ConfigurationStoreConnection"), b => b.MigrationsAssembly("IdentityServerAspNetIdentity"));
+            })
+#endif
             .AddAspNetIdentity<ApplicationUser>();
 
             // not recommended for production - you need to store your key material somewhere secure
